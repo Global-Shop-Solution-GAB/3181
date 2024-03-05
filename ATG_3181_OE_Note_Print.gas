@@ -1,0 +1,106 @@
+Program.Sub.ScreenSU.Start
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+'Screen-Tech: Print Order Notes from Script Button on OE Line
+'ANS
+'8/24/10
+'Hook 12410
+
+V.Local.sSQL.Declare(String)
+V.Local.sText.Declare(String)
+V.Local.sOutput.Declare(String)
+V.Local.sDate.declare(String)
+V.Local.sCust.Declare(String)
+V.Local.sPO.Declare(String)
+V.Local.sOrder.Declare(String)
+V.Local.sLine.Declare(String)
+V.Local.sTextArr.Declare(String)
+V.Local.i.Declare(Long)
+
+F.Intrinsic.Control.If(V.Caller.Hook,=,12010)
+	V.Passed.000162.Set("Print Notes")
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndIf
+
+'F.Intrinsic.Debug.InvokeDebugger
+'F.Intrinsic.Debug.Stop
+F.Intrinsic.String.LPad(V.Passed.000060,"0",7,V.Local.sOrder)
+F.Intrinsic.String.lpad(V.Passed.000051,"0",3,V.Local.sLine)
+F.Intrinsic.String.Concat(V.Local.sLine,"0",V.Local.sLine)
+F.ODBC.Connection!con.OpenConnection(V.Ambient.PDSN,V.Ambient.PUser,V.Ambient.PPass)
+F.Intrinsic.String.Concat("Select Text from Order_Text where Order_No ='",V.Local.sOrder,"' and Order_Line='",V.Local.sLine,"' order by Text_Seq",V.Local.sSQL)
+F.ODBC.Connection!con.OpenRecordsetRO("rst",V.Local.sSQL)
+F.Intrinsic.Control.DoUntil(V.ODBC.con!rst.EOF,=,True)
+	F.Intrinsic.String.Concat(V.Local.sText,V.ODBC.con!rst.FieldVal!Text,V.Local.sText)
+	F.ODBC.con!rst.MoveNext
+F.Intrinsic.Control.Loop
+F.ODBC.con!rst.close
+
+F.Intrinsic.Control.If(V.Local.sText,=,"")
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Printer.SelectPrinterDialog
+
+'F.Intrinsic.Debug.Stop
+F.Intrinsic.String.concat("Select Customer, Customer_PO from V_Order_Header where Order_No='",V.Local.sOrder,"'",V.Local.sSQL)
+F.ODBC.Connection!con.OpenRecordsetRO("rst",V.Local.sSQL)
+F.Intrinsic.Control.If(V.ODBC.con!rst.EOF,=,False)
+	F.Intrinsic.String.Concat("Select Name_Customer from Customer_Master where Customer='",V.ODBC.con!rst.FieldVal!Customer,"' and Rec='1'",V.Local.sSQL)
+	F.ODBC.Connection!con.OpenRecordsetRO("rstC",V.Local.sSQL)
+	F.Intrinsic.Control.If(V.ODBC.con!rstC.EOF,=,False)
+		V.Local.sCust.Set(V.ODBC.con!rstC.FieldVal!Name_Customer)
+	F.Intrinsic.Control.EndIf
+	F.ODBC.con!rstC.close
+	V.Local.sPO.Set(V.ODBC.con!rst.FieldVal!Customer_PO)
+F.Intrinsic.Control.EndIf
+F.ODBC.con!rst.Close
+F.ODBC.Connection!con.Close
+
+'F.Intrinsic.String.DateString(V.Ambient.Date,V.Local.sDate)
+F.Intrinsic.String.Format(V.ambient.Date,"mm/dd/yyyy",V.Local.sDate)
+F.Intrinsic.String.Concat("DATE: ",V.Local.sDate,V.Local.sDate)
+F.Intrinsic.String.Concat("CUSTOMER: ",V.Local.sCust,V.Local.sCust)
+F.Intrinsic.String.Concat("PO: ",V.Local.sPO,V.Local.sPO)
+F.Intrinsic.String.Concat("S/O #: ",V.Passed.000060,V.Local.sOrder)
+F.Intrinsic.String.Concat("Line #: ",V.Passed.000051,V.Local.sLine)
+
+F.Intrinsic.Printer.PrintRet("")
+F.Intrinsic.Printer.PrintRet("")
+F.Intrinsic.Printer.position(5500,)
+F.Intrinsic.Printer.PrintNRet("CHANGE ORDER")
+F.Intrinsic.Printer.Position(10500,)
+F.Intrinsic.Printer.PrintRet(V.Local.sDate)
+F.Intrinsic.Printer.PrintRet("")
+F.Intrinsic.Printer.Position(500,)
+F.Intrinsic.Printer.PrintNRet(V.Local.sCust)
+F.Intrinsic.Printer.Position(10500,)
+F.Intrinsic.Printer.PrintRet(V.Local.sPO)
+F.Intrinsic.Printer.Position(10500,)
+F.Intrinsic.Printer.PrintRet(V.Local.sOrder)
+F.Intrinsic.Printer.Position(10500,)
+F.Intrinsic.Printer.PrintRet(V.Local.sLine)
+F.Intrinsic.Printer.PrintRet("")
+F.Intrinsic.Printer.PrintRet("")
+F.Intrinsic.String.LimitSplit(V.Local.sText,160,V.Local.sTextArr)
+F.Intrinsic.Control.For(V.Local.i,0,V.Local.sTextArr.UBound,1)
+	F.Intrinsic.Printer.Position(400,)
+	F.Intrinsic.Printer.PrintRet(V.Local.sTextArr(v.Local.i))
+F.Intrinsic.Control.Next(V.Local.i)
+F.Intrinsic.Printer.Finished
+
+
+
+Program.Sub.Main.End
+
+
+
+
+Program.Sub.Comments.Start
+${$0$}$$}$$}$12:00:00 AM$}$False
+Program.Sub.Comments.End
